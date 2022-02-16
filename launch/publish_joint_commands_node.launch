@@ -1,0 +1,5 @@
+<launch>
+    <node name="custom_joint_controller_ros" pkg="custom_joint_controller_ros" type="custom_joint_controller_ros_node" respawn="true" clear_params="true" output="screen" >
+        <rosparam file="$(find custom_joint_controller_ros)/config/config.yaml" />
+    </node>
+</launch>

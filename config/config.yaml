@@ -1,0 +1,49 @@
+joint_states: "/machine_0_odom"
+setpoint: "/firefly/full_predicted_state"
+joint_command: "/joint_command"
+
+publish_rate: 100.0
+
+joint_names: ["x_joint", "y_joint", "z_joint", "roll_joint", "pitch_joint", "yaw_joint"]
+
+p_gain_roll: 4
+i_gain_roll: 0
+d_gain_roll: 0.1
+i_max_roll: 100
+i_min_roll: -100
+anti_windup_roll: true
+
+p_gain_pitch: 4
+i_gain_pitch: 0
+d_gain_pitch: 0.1
+i_max_pitch: 100
+i_min_pitch: -100
+anti_windup_pitch: true
+
+p_gain_yaw: 4
+i_gain_yaw: 0
+d_gain_yaw: 0.1
+i_max_yaw: 100
+i_min_yaw: -100
+anti_windup_yaw: true
+
+p_gain_x: 4
+i_gain_x: 0
+d_gain_x: 0.1
+i_max_x: 100
+i_min_x: -100
+anti_windup_x: true
+
+p_gain_y: 4
+i_gain_y: 0
+d_gain_y: 0.1
+i_max_y: 100
+i_min_y: -100
+anti_windup_y: true
+
+p_gain_z: 4
+i_gain_z: 0
+d_gain_z: 0.1
+i_max_z: 100
+i_min_z: -100
+anti_windup_z: true
