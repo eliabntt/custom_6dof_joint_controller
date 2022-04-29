@@ -17,11 +17,10 @@ int main(int argc, char **argv) {
 	custom_joint_controller.init(*nh, *nh_prv);
 
 
-	const int loop_freq = 2 * pub_rate; // faster than controller publish rate
+	const int loop_freq = pub_rate;
 	ros::Rate loop_rate(static_cast<double>(loop_freq));
 
 	while(ros::ok()) {
-		ros::Time now = ros::Time::now();
 		ros::spinOnce();
 		loop_rate.sleep();
 	}

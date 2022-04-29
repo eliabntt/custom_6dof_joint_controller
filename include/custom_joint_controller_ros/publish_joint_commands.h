@@ -61,8 +61,8 @@ namespace publish_joint_commands {
 			std::map<std::string, Commands> commands_struct_;
 
 		private:
-				std::map<std::string, double> upper_limits_;
-				std::map<std::string, double> lower_limits_;
+				std::map<std::string, double> max_position_;
+				std::map<std::string, double> max_velocity_;
 
 				std::vector<std::string> joint_names_;
 				std::shared_ptr<realtime_tools::RealtimePublisher<sensor_msgs::JointState>> joint_state_publisher_;
@@ -85,11 +85,14 @@ namespace publish_joint_commands {
 
 				void enforceLimits(std::string name, double &position);
 				void setCommand(const std::map<std::string, std::vector<double>> &setpoints);
+				void limitVelocity(const std::string& name, double &velocity);
 
 				void getJointStates(const sensor_msgs::JointState::ConstPtr& msg);
-				void getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg);
 
-				ros::Subscriber sub_joint_states, sub_nmpc_goal;
+				void getOdom(const nav_msgs::Odometry::ConstPtr& msg);
+				void getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg);
+				bool first_commad_ = false;
+				ros::Subscriber sub_joint_states,sub_joint_states2, sub_nmpc_goal;
 		};
 }
 
