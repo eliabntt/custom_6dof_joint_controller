@@ -28,3 +28,8 @@ The main params are
 ```
 
 The config.yaml file contains the other settable parameters.
+
+The `setpoint` is a full predicted state from a NMPC in my case. I then take the last point of the trajectory and set it as the goal of the PID. 
+You can easily change that piece of code.
+
+For reference I use the `nmpc` in `rotors_simulator` ([here](https://github.com/ethz-asl/rotors_simulator)) to compute the trajectory.
