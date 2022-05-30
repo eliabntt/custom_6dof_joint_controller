@@ -26,13 +26,13 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("d_gain_y", d_gain_y, 0.0);
 	nh_priv.param("d_gain_z", d_gain_z, 0.0);
 
-	// Get d gains from parameter server for roll, pitch, yaw, x, y, z
-	nh_priv.param("d_gain_roll", d_gain_roll, 0.0);
-	nh_priv.param("d_gain_pitch", d_gain_pitch, 0.0);
-	nh_priv.param("d_gain_yaw", d_gain_yaw, 0.0);
-	nh_priv.param("d_gain_x", d_gain_x, 0.0);
-	nh_priv.param("d_gain_y", d_gain_y, 0.0);
-	nh_priv.param("d_gain_z", d_gain_z, 0.0);
+	// Get i gains from parameter server for roll, pitch, yaw, x, y, z
+	nh_priv.param("i_gain_roll", i_gain_roll, 0.0);
+	nh_priv.param("i_gain_pitch", i_gain_pitch, 0.0);
+	nh_priv.param("i_gain_yaw", i_gain_yaw, 0.0);
+	nh_priv.param("i_gain_x", i_gain_x, 0.0);
+	nh_priv.param("i_gain_y", i_gain_y, 0.0);
+	nh_priv.param("i_gain_z", i_gain_z, 0.0);
 
 	// Get i_max from parameter server for roll, pitch, yaw, x, y, z
 	nh_priv.param("i_max_roll", i_max_roll, 0.0);
@@ -153,7 +153,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 				return false;
 			}
 
-			joint_pid_controllers_[name] = control_toolbox::Pid(p_gain, i_gain, d_gain, i_max, i_min, anti_windup);
+			joint_pid_controllers_[name.c_str()] = control_toolbox::Pid(p_gain, i_gain, d_gain, i_max, i_min, anti_windup);
 		}
 	}
 
@@ -230,8 +230,8 @@ void CustomJointController::enforceLimits(std::string name, double &position) {
 				position = -max_position_[name];
 			}
 		} else {
-			if (0 > position) {
-				position = 0;
+			if (0.3 > position) {
+				position = 0.3;
 			}
 		}
 		if (max_position_[name] < position) {
@@ -262,6 +262,8 @@ void CustomJointController::limitVelocity(const std::string &name, double &veloc
 	}
 }
 
+
+// fixme update to setError/whatever. updatePid use OPPOSITE convention!!! https://github.com/ros-controls/ros_control/pull/12
 void CustomJointController::update(const ros::Time &time, const ros::Duration &period,
                                    const std::map <std::string, std::vector<double>> &current_state) {
 	if (not first_commad_) {
@@ -291,12 +293,12 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 				-max_position_[joint_name],
 				max_position_[joint_name],
 				error);
-			error = -error;
 		} else if (joint_name == "yaw_joint") {
-			error = -angles::shortest_angular_distance(current_position, command_position);
+			error = angles::shortest_angular_distance(current_position, command_position);
 		} else {
-			error = current_position - command_position;
+			error = command_position - current_position;
 		}
+		error = -error;
 
 		if (has_velocity_) {
 			vel_error = command_velocity - current_velocity;
@@ -310,6 +312,7 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		if (fabs(error) < 0.05) {
 			commanded_velocity = 0;
 		}
+		std::cout << "For joint " << joint_name << " error is " << error << " and the vel " << commanded_velocity;
 		joint_pid_controllers_[joint_name].setCurrentCmd(commanded_velocity);
 	}
 
