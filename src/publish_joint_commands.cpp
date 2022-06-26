@@ -397,6 +397,9 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	if (!msg->points.empty() && msg->points.size() > 1) {
 		index = (int) ((msg->points.size() - 1));
 	}
+	else {
+		return;
+	}
 	local_setpoints["x_joint"].emplace_back(msg->points[index].transforms[0].translation.x);
 	local_setpoints["x_joint"].emplace_back(msg->points[index].velocities[0].linear.x);
 	local_setpoints["y_joint"].emplace_back(msg->points[index].transforms[0].translation.y);

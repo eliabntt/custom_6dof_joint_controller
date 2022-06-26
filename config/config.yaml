@@ -46,13 +46,13 @@ i_max_z:  1
 i_min_z:  -1
 anti_windup_z: true
 
-position_limit_roll: 0.35
-position_limit_pitch: 0.35
+position_limit_roll: 0.45
+position_limit_pitch: 0.45
 position_limit_yaw: 6.3
 
-velocity_limit_roll: 2
-velocity_limit_pitch: 2
-velocity_limit_yaw: 3
-velocity_limit_x: 1.0
-velocity_limit_y: 1.0
-velocity_limit_z: 1.0
+velocity_limit_roll: 1
+velocity_limit_pitch: 1
+velocity_limit_yaw: 2
+velocity_limit_x: 0.5
+velocity_limit_y: 0.5
+velocity_limit_z: 0.5
