@@ -52,7 +52,7 @@ position_limit_yaw: 6.3
 
 velocity_limit_roll: 1
 velocity_limit_pitch: 1
-velocity_limit_yaw: 0.8
+velocity_limit_yaw: 0.5
 velocity_limit_x: 0.5
 velocity_limit_y: 0.5
 velocity_limit_z: 0.5
