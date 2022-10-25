@@ -4,6 +4,11 @@
 
 #include <tf/LinearMath/Matrix3x3.h>
 #include "custom_joint_controller_ros/publish_joint_commands.h"
+#define MATH_PI     3.1415926535897931
+#define SIN_PI_3    sinf(MATH_PI/3)
+#define COS_PI_3    cosf(MATH_PI/3)
+#define R_WHEEL     4
+#define R_BASE      17
 
 using namespace publish_joint_commands;
 
@@ -150,7 +155,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 				max_position_["z_joint"] = position_limit_z;
 			} else {
 				ROS_ERROR("Unknown joint name: %s", name.c_str());
-				return false;
+//				return false;
 			}
 
 			joint_pid_controllers_[name.c_str()] = control_toolbox::Pid(p_gain, i_gain, d_gain, i_max, i_min, anti_windup);
@@ -195,6 +200,17 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
+	std::string cmd_vel;
+	if (!nh_priv.getParam("cmd_vel", cmd_vel)) {
+		ROS_WARN_STREAM("Param 'cmd_vel' not set");
+		cmd_vel = "cmd_vel";
+	}
+
+	if (!nh_priv.getParam("robot_id", robot_id)) {
+		ROS_ERROR("Param 'robot_id' not set");
+		return false;
+	}
+
 	// realtime publisher
 	joint_state_publisher_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(nh, joint_command, 4));
 
@@ -206,6 +222,8 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	sub_nmpc_goal = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(current_setpoint, 1,
 	                                                                       &CustomJointController::getCurrentSetpoint,
 	                                                                       this);
+
+	sub_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(cmd_vel, 1, &CustomJointController::getDesiredSpeed, this);
 
 	return true;
 }
@@ -284,7 +302,7 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		double current_velocity = it->second[1];
 
 		enforceLimits(joint_name, command_position);
-		std::cout << "Limit enforced " << joint_name << " " << command_position << std::endl;
+//		std::cout << "Limit enforced " << joint_name << " " << command_position << std::endl;
 
 		if (joint_name == "roll_joint" || joint_name == "pitch_joint") {
 			angles::shortest_angular_distance_with_large_limits(
@@ -298,21 +316,26 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		} else {
 			error = command_position - current_position;
 		}
-		error = -error;
+		error = -error; //updatePID use this convention
 
 		if (has_velocity_) {
-			vel_error = command_velocity - current_velocity;
-			commanded_velocity = joint_pid_controllers_[joint_name].updatePid(error, vel_error, period);
+			vel_error = -(command_velocity - current_velocity);
+			if (!ignore_position)
+				commanded_velocity = joint_pid_controllers_[joint_name].updatePid(error, vel_error, period);
+			else {
+				commanded_velocity = joint_pid_controllers_[joint_name].updatePid(vel_error, period);
+			}
 		} else {
 			commanded_velocity = joint_pid_controllers_[joint_name].updatePid(error, period);
 		}
 		limitVelocity(joint_name, commanded_velocity);
 
 		// if error < 0.1, set velocity to 0
-		if (fabs(error) < 0.05) {
-			commanded_velocity = 0;
-		}
-		std::cout << "For joint " << joint_name << " error is " << error << " and the vel " << commanded_velocity;
+		if (!ignore_position)
+			if (fabs(error) < 0.05) {
+				commanded_velocity = 0;
+			}
+		std::cout << "For joint " << joint_name << " error is " << error << " velerror " << vel_error << " current vel " << current_velocity << " and the vel " << commanded_velocity << std::endl;
 		joint_pid_controllers_[joint_name].setCurrentCmd(commanded_velocity);
 	}
 
@@ -321,21 +344,103 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 
 		// try to publish
 		if (joint_state_publisher_->trylock()) {
-			// we're actually publishing, so increment time
-			last_publish_time_ = last_publish_time_ + ros::Duration(1.0 / publish_rate_);
-
-			// populate joint state message:
-			// - fill only joints that are present in the JointStateInterface, i.e. indices [0, num_hw_joints_)
-			// - leave unchanged extra joints, which have static values, i.e. indices from num_hw_joints_ onwards
-			joint_state_publisher_->msg_ = sensor_msgs::JointState();
-			joint_state_publisher_->msg_.header.stamp = time;
-			for (const auto &joint: joint_pid_controllers_) {
-				joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-				joint_state_publisher_->msg_.velocity.push_back(joint_pid_controllers_[std::string(joint.first)].getCurrentCmd());
+			if (robot_id == IROTATE){
+				pubIRotate(time);
 			}
-			joint_state_publisher_->unlockAndPublish();
+			if (robot_id == DRONE){
+				pubDrone(time);
+			}
 		}
 	}
+}
+
+void CustomJointController::pubDrone(ros::Time time){
+	// we're actually publishing, so increment time
+	last_publish_time_ = last_publish_time_ + ros::Duration(1.0 / publish_rate_);
+
+	// populate joint state message:
+	// - fill only joints that are present in the JointStateInterface, i.e. indices [0, num_hw_joints_)
+	// - leave unchanged extra joints, which have static values, i.e. indices from num_hw_joints_ onwards
+	joint_state_publisher_->msg_ = sensor_msgs::JointState();
+	joint_state_publisher_->msg_.header.stamp = time;
+	for (const auto &joint: joint_pid_controllers_) {
+		joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+		joint_state_publisher_->msg_.velocity.push_back(
+			joint_pid_controllers_[std::string(joint.first)].getCurrentCmd());
+	}
+	joint_state_publisher_->unlockAndPublish();
+}
+
+void CustomJointController::pubIRotate(ros::Time time) {
+
+
+	double vx = 0; //vel_x * cos(w) - vel_y * sin(w);
+	double vy = 0; //vel_x * sin(w) + vel_y * cos(w);
+	double vw = 0;
+
+	// we're actually publishing, so increment time
+	last_publish_time_ = last_publish_time_ + ros::Duration(1.0 / publish_rate_);
+
+	// populate joint state message:
+	// - fill only joints that are present in the JointStateInterface, i.e. indices [0, num_hw_joints_)
+	// - leave unchanged extra joints, which have static values, i.e. indices from num_hw_joints_ onwards
+	joint_state_publisher_->msg_ = sensor_msgs::JointState();
+	joint_state_publisher_->msg_.header.stamp = time;
+
+	for (const auto &joint: joint_pid_controllers_) {
+		if (std::string(joint.first) == "x_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			vx = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
+			joint_state_publisher_->msg_.velocity.push_back(vx);
+			ROS_INFO_STREAM(joint.first << " " << vx);
+		}
+		if (std::string(joint.first) == "y_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			vy = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
+			joint_state_publisher_->msg_.velocity.push_back(vy);
+			ROS_INFO_STREAM(joint.first << " " << vy);
+		}
+
+		if (std::string(joint.first) == "yaw_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			vw = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
+			joint_state_publisher_->msg_.velocity.push_back(vw);
+			ROS_INFO_STREAM(joint.first << " " << vw);
+		}
+	}
+
+	// apply kinematics - current wheel config.
+	// odometry obtained from literature_robotino...
+	// vx sin(alpha i) + vy cos(alpha i) + vw R
+	double v0 = -vx * SIN_PI_3 + vy * COS_PI_3 + vw * R_BASE;
+	double v1 = -vy + vw * R_BASE;
+	double v2 = +vx * SIN_PI_3 + vy * COS_PI_3 + vw * R_BASE;
+
+	// get rad/s for each wheel
+	double w0 = v0 / R_WHEEL;
+	double w1 = v1 / R_WHEEL;
+	double w2 = v2 / R_WHEEL;
+
+	for (const auto &joint: joint_pid_controllers_) {
+		if (std::string(joint.first) == "wheel0_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.push_back(w0);
+		}
+		if (std::string(joint.first) == "wheel1_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.push_back(w1);
+		}
+		if (std::string(joint.first) == "wheel0_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.push_back(w2);
+		}
+		if (std::string(joint.first) == "cameraholder_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.push_back(0);
+		}
+	}
+
+	joint_state_publisher_->unlockAndPublish();
 }
 
 void CustomJointController::getJointStates(const sensor_msgs::JointState::ConstPtr &msg) {
@@ -396,8 +501,7 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	int index = 0;
 	if (!msg->points.empty() && msg->points.size() > 1) {
 		index = (int) ((msg->points.size() - 1));
-	}
-	else {
+	} else {
 		return;
 	}
 	local_setpoints["x_joint"].emplace_back(msg->points[index].transforms[0].translation.x);
@@ -428,6 +532,24 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 //	for (auto i: local_setpoints) {
 //		ROS_INFO_STREAM("Setpoint for " << i.first << ": " << i.second[0] << " " << i.second[1]);
 //	}
+	setCommand(local_setpoints);
+	ignore_position = false;
+}
+
+void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr &msg) {
+	ROS_INFO_STREAM("Desired speed: " << msg->linear.x << " " << msg->linear.y << " " << msg->angular.z);
+
+	std::map <std::string, std::vector<double>> local_setpoints;
+
+	local_setpoints["x_joint"].emplace_back(0);
+	local_setpoints["x_joint"].emplace_back(msg->linear.x);
+	local_setpoints["y_joint"].emplace_back(0);
+	local_setpoints["y_joint"].emplace_back(msg->linear.y);
+	local_setpoints["yaw_joint"].emplace_back(0);
+	local_setpoints["yaw_joint"].emplace_back(msg->angular.z);
+
+	ignore_position = true;
+
 	setCommand(local_setpoints);
 }
 

@@ -2,7 +2,8 @@ joint_states: "/placeholder"
 
 publish_rate: 50.0
 
-joint_names: ["x_joint", "y_joint", "z_joint", "roll_joint", "pitch_joint", "yaw_joint"]
+#joint_names: ["x_joint", "y_joint", "z_joint", "roll_joint", "pitch_joint", "yaw_joint"]
+joint_names: ["x_joint", "y_joint", "yaw_joint", "wheel0_joint", "wheel1_joint", "wheel2_joint", "cameraholder_joint"]
 
 p_gain_roll:  1.2
 i_gain_roll:  4
@@ -18,23 +19,23 @@ i_max_pitch:  1
 i_min_pitch:  -1
 anti_windup_pitch: true
 
-p_gain_yaw:  1.2
+p_gain_yaw: 0.4 #1.2
 i_gain_yaw:  4
-d_gain_yaw:  0.001
+d_gain_yaw:  0.00
 i_max_yaw:  1
 i_min_yaw:  -1
 anti_windup_yaw: true
 
-p_gain_x: 1.2
-i_gain_x: 4
-d_gain_x: 0.001
+p_gain_x: 0.6 #1.2
+i_gain_x: 0.004
+d_gain_x: 0.00
 i_max_x: 1
 i_min_x: -1
 anti_windup_x: true
 
-p_gain_y:  1.2
-i_gain_y:  4
-d_gain_y:  0.001
+p_gain_y:  0.6 #1.2
+i_gain_y:  0.004
+d_gain_y:  0.00
 i_max_y:  1
 i_min_y:  -1
 anti_windup_y: true
@@ -52,7 +53,7 @@ position_limit_yaw: 6.3
 
 velocity_limit_roll: 0.7
 velocity_limit_pitch: 0.7
-velocity_limit_yaw: 0.5
+velocity_limit_yaw: 1
 velocity_limit_x: 0.5
 velocity_limit_y: 0.5
 velocity_limit_z: 0.5

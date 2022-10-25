@@ -91,8 +91,16 @@ namespace publish_joint_commands {
 
 				void getOdom(const nav_msgs::Odometry::ConstPtr& msg);
 				void getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg);
+				void getDesiredSpeed(const geometry_msgs::Twist::ConstPtr &msg);
 				bool first_commad_ = false;
-				ros::Subscriber sub_joint_states,sub_joint_states2, sub_nmpc_goal;
+				bool ignore_position = false;
+				void pubDrone(ros::Time time);
+				void pubIRotate(ros::Time time);
+				enum robot_type{
+						DRONE, IROTATE
+				};
+				int robot_id;
+				ros::Subscriber sub_joint_states,sub_joint_states2, sub_nmpc_goal, sub_cmd_vel_goal;
 		};
 }
 

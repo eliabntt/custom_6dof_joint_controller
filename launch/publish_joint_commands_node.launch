@@ -12,6 +12,7 @@
       <param name="position_limit_x" value="$(arg position_limit_x)" />
       <param name="position_limit_y" value="$(arg position_limit_y)" />
       <param name="position_limit_z" value="$(arg position_limit_z)" />
+      <param name="robot_id" value="$(arg robot_id)" />
 
     </node>
 </launch>
