@@ -40,9 +40,9 @@ i_max_y:  1
 i_min_y:  -1
 anti_windup_y: true
 
-p_gain_z:  1.2
-i_gain_z:  4
-d_gain_z:  0.001
+p_gain_z:  0.6
+i_gain_z:  0.004
+d_gain_z:  0.00
 i_max_z:  1
 i_min_z:  -1
 anti_windup_z: true

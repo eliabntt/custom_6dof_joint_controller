@@ -517,10 +517,6 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	tf::Matrix3x3 m(q);
 	double roll, pitch, yaw;
 	m.getRPY(roll, pitch, yaw);
-//	ROS_INFO_STREAM("q setpoint is " << q.x() << " " << q.y() << " " << q.z() << " " << q.w());
-//	ROS_INFO_STREAM("roll is " << roll);
-//	ROS_INFO_STREAM("pitch is " << pitch);
-//	ROS_INFO_STREAM("yaw is " << yaw);
 
 	local_setpoints["roll_joint"].emplace_back(roll);
 	local_setpoints["roll_joint"].emplace_back(msg->points[index].velocities[0].angular.x);
@@ -529,9 +525,6 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	local_setpoints["yaw_joint"].emplace_back(yaw);
 	local_setpoints["yaw_joint"].emplace_back(msg->points[index].velocities[0].angular.z);
 
-//	for (auto i: local_setpoints) {
-//		ROS_INFO_STREAM("Setpoint for " << i.first << ": " << i.second[0] << " " << i.second[1]);
-//	}
 	setCommand(local_setpoints);
 	ignore_position = false;
 }
@@ -541,10 +534,19 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 
 	std::map <std::string, std::vector<double>> local_setpoints;
 
+
 	local_setpoints["x_joint"].emplace_back(0);
 	local_setpoints["x_joint"].emplace_back(msg->linear.x);
 	local_setpoints["y_joint"].emplace_back(0);
 	local_setpoints["y_joint"].emplace_back(msg->linear.y);
+
+//	local_setpoints["z_joint"].emplace_back(0);
+//	local_setpoints["z_joint"].emplace_back(msg->linear.z);
+//	local_setpoints["roll_joint"].emplace_back(0);
+//	local_setpoints["roll_joint"].emplace_back(msg->angular.x);
+//	local_setpoints["pitch_joint"].emplace_back(0);
+//	local_setpoints["pitch_joint"].emplace_back(msg->angular.y);
+
 	local_setpoints["yaw_joint"].emplace_back(0);
 	local_setpoints["yaw_joint"].emplace_back(msg->angular.z);
 
