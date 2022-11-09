@@ -5,16 +5,16 @@ publish_rate: 50.0
 #joint_names: ["x_joint", "y_joint", "z_joint", "roll_joint", "pitch_joint", "yaw_joint"]
 joint_names: ["x_joint", "y_joint", "yaw_joint", "wheel0_joint", "wheel1_joint", "wheel2_joint", "cameraholder_joint"]
 
-p_gain_roll:  1.2
+p_gain_roll:  0.4
 i_gain_roll:  4
-d_gain_roll:  0.001
+d_gain_roll:  0.00
 i_max_roll:  1
 i_min_roll:  -1
 anti_windup_roll: true
 
-p_gain_pitch:  1.2
+p_gain_pitch:  0.4
 i_gain_pitch:  4
-d_gain_pitch:  0.001
+d_gain_pitch:  0.00
 i_max_pitch:  1
 i_min_pitch:  -1
 anti_windup_pitch: true
