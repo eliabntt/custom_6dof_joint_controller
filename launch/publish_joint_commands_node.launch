@@ -4,6 +4,7 @@
     <arg name="box_max_y" default="5000" />
     <arg name="box_max_z" default="5000" />
     <arg name="robot_id"  default="0" />
+    <arg name="frame_id"  default="world"/> <!-- use "world" to not convert velocities of the setpoint. Else, it will use odom orientation -->
     <node name="custom_joint_controller_ros" pkg="custom_joint_controller_ros" type="custom_joint_controller_ros_node" respawn="true" clear_params="true" output="screen" >
         <rosparam file="$(find custom_joint_controller_ros)/config/config.yaml" />
         <param name="odom" value="/$(arg namespace)/odom" />

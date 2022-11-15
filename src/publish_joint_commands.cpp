@@ -211,6 +211,11 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
+	if (!nh_priv.getParam("frame_id", frame_id)) {
+		ROS_ERROR("Param 'frame_id' not set");
+		return false;
+	}
+
 	// realtime publisher
 	joint_state_publisher_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(nh, joint_command, 4));
 
@@ -509,12 +514,17 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	} else {
 		return;
 	}
+	double vel_x, vel_y, vel_z;
+	Eigen::Vector3d vel(msg->points[index].velocities[0].linear.x,	msg->points[index].velocities[0].linear.y,	msg->points[index].velocities[0].linear.z);
+	if (frame_id != "world")
+		vel = quaternion_odom * vel;
+
 	local_setpoints["x_joint"].emplace_back(msg->points[index].transforms[0].translation.x);
-	local_setpoints["x_joint"].emplace_back(msg->points[index].velocities[0].linear.x);
+	local_setpoints["x_joint"].emplace_back(vel(0));
 	local_setpoints["y_joint"].emplace_back(msg->points[index].transforms[0].translation.y);
-	local_setpoints["y_joint"].emplace_back(msg->points[index].velocities[0].linear.y);
+	local_setpoints["y_joint"].emplace_back(vel(1));
 	local_setpoints["z_joint"].emplace_back(msg->points[index].transforms[0].translation.z);
-	local_setpoints["z_joint"].emplace_back(msg->points[index].velocities[0].linear.z);
+	local_setpoints["z_joint"].emplace_back(vel(2));
 
 	// convert ros quaternion to rpy
 	tf::Quaternion q(msg->points[index].transforms[0].rotation.x, msg->points[index].transforms[0].rotation.y,
@@ -541,7 +551,8 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 
 	double vel_x, vel_y;
 	Eigen::Vector3d vel(msg->linear.x , msg->linear.y, 0);
-	vel = quaternion_odom * vel;
+	if (frame_id != "world")
+		vel = quaternion_odom * vel;
 
 	local_setpoints["x_joint"].emplace_back(0);
 	local_setpoints["x_joint"].emplace_back(vel(0));

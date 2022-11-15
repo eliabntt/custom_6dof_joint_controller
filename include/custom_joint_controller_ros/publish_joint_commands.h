@@ -85,6 +85,7 @@ namespace publish_joint_commands {
 				double p_gain_z, i_gain_z, d_gain_z, i_max_z, i_min_z;
 				bool anti_windup_roll, anti_windup_pitch, anti_windup_yaw, anti_windup_x, anti_windup_y, anti_windup_z;
 
+				std::string frame_id;
 				Eigen::Quaterniond quaternion_odom;
 
 				unsigned int n_joints_;
