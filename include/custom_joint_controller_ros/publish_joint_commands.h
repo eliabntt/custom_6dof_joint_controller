@@ -38,6 +38,10 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Eigen>
+#include "tf_conversions/tf_eigen.h"
+#include <eigen_conversions/eigen_msg.h>
+
 namespace publish_joint_commands {
 		class CustomJointController {
 
@@ -80,6 +84,8 @@ namespace publish_joint_commands {
 				double p_gain_y, i_gain_y, d_gain_y, i_max_y, i_min_y;
 				double p_gain_z, i_gain_z, d_gain_z, i_max_z, i_min_z;
 				bool anti_windup_roll, anti_windup_pitch, anti_windup_yaw, anti_windup_x, anti_windup_y, anti_windup_z;
+
+				Eigen::Quaterniond quaternion_odom;
 
 				unsigned int n_joints_;
 

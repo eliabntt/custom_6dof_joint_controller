@@ -59,6 +59,9 @@
   <build_depend>urdf</build_depend>
   <build_depend>controller_interface</build_depend>
   <build_depend>hardware_interface</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>tf_conversions</build_depend>
+  <build_depend>tf</build_depend>
   <build_export_depend>angles</build_export_depend>
   <build_export_depend>control_msgs</build_export_depend>
   <build_export_depend>control_toolbox</build_export_depend>
@@ -79,7 +82,9 @@
   <exec_depend>urdf</exec_depend>
   <exec_depend>controller_interface</exec_depend>
   <exec_depend>hardware_interface</exec_depend>
-
+  <exec_depend>eigen</exec_depend>
+  <exec_depend>tf_conversions</exec_depend>
+  <exec_depend>tf</exec_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

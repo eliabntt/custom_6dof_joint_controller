@@ -363,6 +363,7 @@ void CustomJointController::pubDrone(ros::Time time){
 	// - leave unchanged extra joints, which have static values, i.e. indices from num_hw_joints_ onwards
 	joint_state_publisher_->msg_ = sensor_msgs::JointState();
 	joint_state_publisher_->msg_.header.stamp = time;
+
 	for (const auto &joint: joint_pid_controllers_) {
 		joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
 		joint_state_publisher_->msg_.velocity.push_back(
@@ -460,21 +461,25 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg) {
 		tf::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z,
 		                 msg->pose.pose.orientation.w);
 
+		tf::quaternionTFToEigen(q, quaternion_odom);
+		Eigen::Vector3d vel(msg->twist.twist.linear.x , msg->twist.twist.linear.y, msg->twist.twist.linear.z);
+		vel = quaternion_odom * vel;
+
 		tf::Matrix3x3 m(q);
 		double roll, pitch, yaw;
 		m.getRPY(roll, pitch, yaw);
 
 		if (name == "x_joint") {
 			position = msg->pose.pose.position.x;
-			velocity = msg->twist.twist.linear.x;
+			velocity = vel(0);
 		}
 		if (name == "y_joint") {
 			position = msg->pose.pose.position.y;
-			velocity = msg->twist.twist.linear.y;
+			velocity = vel(1);
 		}
 		if (name == "z_joint") {
 			position = msg->pose.pose.position.z;
-			velocity = msg->twist.twist.linear.z;
+			velocity = vel(2);
 		}
 		if (name == "roll_joint") {
 			position = roll;
@@ -534,11 +539,14 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 
 	std::map <std::string, std::vector<double>> local_setpoints;
 
+	double vel_x, vel_y;
+	Eigen::Vector3d vel(msg->linear.x , msg->linear.y, 0);
+	vel = quaternion_odom * vel;
 
 	local_setpoints["x_joint"].emplace_back(0);
-	local_setpoints["x_joint"].emplace_back(msg->linear.x);
+	local_setpoints["x_joint"].emplace_back(vel(0));
 	local_setpoints["y_joint"].emplace_back(0);
-	local_setpoints["y_joint"].emplace_back(msg->linear.y);
+	local_setpoints["y_joint"].emplace_back(vel(1));
 
 //	local_setpoints["z_joint"].emplace_back(0);
 //	local_setpoints["z_joint"].emplace_back(msg->linear.z);
