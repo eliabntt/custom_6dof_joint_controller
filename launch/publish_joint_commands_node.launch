@@ -15,5 +15,6 @@
       <param name="position_limit_y" value="$(arg position_limit_y)" />
       <param name="position_limit_z" value="$(arg position_limit_z)" />
       <param name="robot_id" type="int" value="$(arg robot_id)" />
+      <param name="frame_id" value="$(arg frame_id)" />
     </node>
 </launch>
