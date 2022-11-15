@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(custom_joint_controller_ros_irotate)
+project(custom_joint_controller_ros)
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 14)
 endif ()
@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS
         tf_conversions
         tf
         eigen_conversions
+        message_filters
         )
 
 ## System dependencies are found with CMake's conventions
@@ -123,7 +124,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES custom_joint_controller_ros
-        CATKIN_DEPENDS angles control_msgs control_toolbox realtime_tools roscpp sensor_msgs std_msgs urdf controller_interface hardware_interface
+        CATKIN_DEPENDS angles control_msgs control_toolbox realtime_tools roscpp sensor_msgs std_msgs urdf controller_interface hardware_interface message_filters
 )
 
 ###########
@@ -153,7 +154,7 @@ add_library(${PROJECT_NAME}
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/publish_joint_command_node.cpp src/publish_joint_commands.cpp)
+add_executable(${PROJECT_NAME}_irotate_node src/publish_joint_command_node.cpp src/publish_joint_commands.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -166,7 +167,7 @@ add_executable(${PROJECT_NAME}_node src/publish_joint_command_node.cpp src/publi
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(${PROJECT_NAME}_irotate_node
         ${catkin_LIBRARIES}
         )
 

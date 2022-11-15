@@ -41,6 +41,11 @@
 #include <Eigen/Eigen>
 #include "tf_conversions/tf_eigen.h"
 #include <eigen_conversions/eigen_msg.h>
+#include <message_filters/time_synchronizer.h>
+
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/subscriber.h>
 
 namespace publish_joint_commands {
 		class CustomJointController {
@@ -80,10 +85,11 @@ namespace publish_joint_commands {
 				double p_gain_roll, i_gain_roll, d_gain_roll, i_max_roll, i_min_roll;
 				double p_gain_pitch, i_gain_pitch, d_gain_pitch, i_max_pitch, i_min_pitch;
 				double p_gain_yaw, i_gain_yaw, d_gain_yaw, i_max_yaw, i_min_yaw;
+				double p_gain_cameraholder, i_gain_cameraholder, d_gain_cameraholder, i_max_cameraholder, i_min_cameraholder;
 				double p_gain_x, i_gain_x, d_gain_x, i_max_x, i_min_x;
 				double p_gain_y, i_gain_y, d_gain_y, i_max_y, i_min_y;
 				double p_gain_z, i_gain_z, d_gain_z, i_max_z, i_min_z;
-				bool anti_windup_roll, anti_windup_pitch, anti_windup_yaw, anti_windup_x, anti_windup_y, anti_windup_z;
+				bool anti_windup_roll, anti_windup_pitch, anti_windup_yaw, anti_windup_cameraholder, anti_windup_x, anti_windup_y, anti_windup_z;
 
 				std::string frame_id;
 				Eigen::Quaterniond quaternion_odom;
@@ -96,9 +102,10 @@ namespace publish_joint_commands {
 
 				void getJointStates(const sensor_msgs::JointState::ConstPtr& msg);
 
-				void getOdom(const nav_msgs::Odometry::ConstPtr& msg);
+				void getOdom(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam);
 				void getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg);
 				void getDesiredSpeed(const geometry_msgs::Twist::ConstPtr &msg);
+				void getDesiredCameraSpeed(const geometry_msgs::Twist::ConstPtr &msg);
 				bool first_commad_ = false;
 				bool ignore_position = false;
 				void pubDrone(ros::Time time);
@@ -107,7 +114,13 @@ namespace publish_joint_commands {
 						DRONE, IROTATE
 				};
 				int robot_id;
-				ros::Subscriber sub_joint_states,sub_joint_states2, sub_nmpc_goal, sub_cmd_vel_goal;
+				ros::Subscriber sub_joint_states, sub_camera_state, sub_joint_states2, sub_nmpc_goal, sub_cmd_vel_goal, sub_camera_cmd_vel_goal;
+
+				typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, nav_msgs::Odometry> MyApproxSyncPolicy;
+				typedef message_filters::Synchronizer<MyApproxSyncPolicy>  sync_approx;
+				boost::shared_ptr<sync_approx> approx;
+
+				message_filters::Subscriber<nav_msgs::Odometry> odomRobotSub, odomCamSub;
 		};
 }
 

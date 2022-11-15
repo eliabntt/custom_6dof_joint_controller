@@ -6,7 +6,7 @@
 
 
 int main(int argc, char **argv) {
-	ros::init(argc, argv, "custom_joint_controller_ros");
+	ros::init(argc, argv, "custom_joint_controller_irotate_ros");
 
 	auto *nh = new ros::NodeHandle();
 	auto *nh_prv = new ros::NodeHandle("~");

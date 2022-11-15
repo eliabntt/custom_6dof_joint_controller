@@ -19,6 +19,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("p_gain_roll", p_gain_roll, 0.0);
 	nh_priv.param("p_gain_pitch", p_gain_pitch, 0.0);
 	nh_priv.param("p_gain_yaw", p_gain_yaw, 0.0);
+	nh_priv.param("p_gain_cameraholder", p_gain_cameraholder, 0.0);
 	nh_priv.param("p_gain_x", p_gain_x, 0.0);
 	nh_priv.param("p_gain_y", p_gain_y, 0.0);
 	nh_priv.param("p_gain_z", p_gain_z, 0.0);
@@ -27,6 +28,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("d_gain_roll", d_gain_roll, 0.0);
 	nh_priv.param("d_gain_pitch", d_gain_pitch, 0.0);
 	nh_priv.param("d_gain_yaw", d_gain_yaw, 0.0);
+	nh_priv.param("d_gain_cameraholder", d_gain_cameraholder, 0.0);
 	nh_priv.param("d_gain_x", d_gain_x, 0.0);
 	nh_priv.param("d_gain_y", d_gain_y, 0.0);
 	nh_priv.param("d_gain_z", d_gain_z, 0.0);
@@ -35,6 +37,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("i_gain_roll", i_gain_roll, 0.0);
 	nh_priv.param("i_gain_pitch", i_gain_pitch, 0.0);
 	nh_priv.param("i_gain_yaw", i_gain_yaw, 0.0);
+	nh_priv.param("i_gain_cameraholder", i_gain_cameraholder, 0.0);
 	nh_priv.param("i_gain_x", i_gain_x, 0.0);
 	nh_priv.param("i_gain_y", i_gain_y, 0.0);
 	nh_priv.param("i_gain_z", i_gain_z, 0.0);
@@ -43,6 +46,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("i_max_roll", i_max_roll, 0.0);
 	nh_priv.param("i_max_pitch", i_max_pitch, 0.0);
 	nh_priv.param("i_max_yaw", i_max_yaw, 0.0);
+	nh_priv.param("i_max_cameraholder", i_max_cameraholder, 0.0);
 	nh_priv.param("i_max_x", i_max_x, 0.0);
 	nh_priv.param("i_max_y", i_max_y, 0.0);
 	nh_priv.param("i_max_z", i_max_z, 0.0);
@@ -51,6 +55,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("i_min_roll", i_min_roll, 0.0);
 	nh_priv.param("i_min_pitch", i_min_pitch, 0.0);
 	nh_priv.param("i_min_yaw", i_min_yaw, 0.0);
+	nh_priv.param("i_min_cameraholder", i_min_cameraholder, 0.0);
 	nh_priv.param("i_min_x", i_min_x, 0.0);
 	nh_priv.param("i_min_y", i_min_y, 0.0);
 	nh_priv.param("i_min_z", i_min_z, 0.0);
@@ -59,24 +64,27 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	nh_priv.param("anti_windup_roll", anti_windup_roll, false);
 	nh_priv.param("anti_windup_pitch", anti_windup_pitch, false);
 	nh_priv.param("anti_windup_yaw", anti_windup_yaw, false);
+	nh_priv.param("anti_windup_cameraholder", anti_windup_cameraholder, false);
 	nh_priv.param("anti_windup_x", anti_windup_x, false);
 	nh_priv.param("anti_windup_y", anti_windup_y, false);
 	nh_priv.param("anti_windup_z", anti_windup_z, false);
 
 	// Get velocity_limit from parameter server for roll, pitch, yaw, x, y, z
-	double velocity_limit_roll, velocity_limit_pitch, velocity_limit_yaw, velocity_limit_x, velocity_limit_y, velocity_limit_z;
+	double velocity_limit_roll, velocity_limit_pitch, velocity_limit_yaw, velocity_limit_x, velocity_limit_y, velocity_limit_z, velocity_limit_cameraholder;
 	nh_priv.param("velocity_limit_roll", velocity_limit_roll, 0.0);
 	nh_priv.param("velocity_limit_pitch", velocity_limit_pitch, 0.0);
 	nh_priv.param("velocity_limit_yaw", velocity_limit_yaw, 0.0);
+	nh_priv.param("velocity_limit_cameraholder", velocity_limit_cameraholder, 0.0);
 	nh_priv.param("velocity_limit_x", velocity_limit_x, 0.0);
 	nh_priv.param("velocity_limit_y", velocity_limit_y, 0.0);
 	nh_priv.param("velocity_limit_z", velocity_limit_z, 0.0);
 
 	// Get position_limit from parameter server for roll, pitch, yaw, x, y, z
-	double position_limit_roll, position_limit_pitch, position_limit_yaw, position_limit_x, position_limit_y, position_limit_z;
+	double position_limit_roll, position_limit_pitch, position_limit_yaw, position_limit_cameraholder, position_limit_x, position_limit_y, position_limit_z;
 	nh_priv.param("position_limit_roll", position_limit_roll, 0.0);
 	nh_priv.param("position_limit_pitch", position_limit_pitch, 0.0);
 	nh_priv.param("position_limit_yaw", position_limit_yaw, 0.0);
+	nh_priv.param("position_limit_cameraholder", position_limit_cameraholder, 0.0);
 	nh_priv.param("position_limit_x", position_limit_x, 0.0);
 	nh_priv.param("position_limit_y", position_limit_y, 0.0);
 	nh_priv.param("position_limit_z", position_limit_z, 0.0);
@@ -123,6 +131,22 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 //				ROS_INFO_STREAM("UPDATING " << name << " in yaw");
 				max_velocity_["yaw_joint"] = velocity_limit_yaw;
 				max_position_["yaw_joint"] = position_limit_yaw;
+			}else if (name == "cameraholder_joint") {
+				p_gain = p_gain_cameraholder;
+				i_gain = i_gain_cameraholder;
+				d_gain = d_gain_cameraholder;
+				i_max = i_max_cameraholder;
+				i_min = i_min_cameraholder;
+				anti_windup = anti_windup_cameraholder;
+				max_velocity_["cameraholder_joint"] = velocity_limit_cameraholder;
+				max_position_["cameraholder_joint"] = position_limit_cameraholder;
+				ROS_INFO_STREAM("UPDATING " << name << " in cameraholder");
+				ROS_INFO_STREAM(p_gain_cameraholder << " " <<
+					                i_gain_cameraholder << " " <<
+					                d_gain_cameraholder << " " <<
+						                i_max_cameraholder << " " <<
+					                i_min_cameraholder << " " <<
+					                anti_windup_cameraholder << " ");
 			} else if (name == "x_joint") {
 				p_gain = p_gain_x;
 				i_gain = i_gain_x;
@@ -193,6 +217,13 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
+	std::string odomCam;
+	// get publishing period
+	if (!nh_priv.getParam("odomCam", odomCam)) {
+		ROS_ERROR("Parameter 'odomCam' not set");
+		return false;
+	}
+
 	std::string current_setpoint;
 	// get publishing period
 	if (!nh_priv.getParam("setpoint", current_setpoint)) {
@@ -204,6 +235,12 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	if (!nh_priv.getParam("cmd_vel", cmd_vel)) {
 		ROS_WARN_STREAM("Param 'cmd_vel' not set");
 		cmd_vel = "cmd_vel";
+	}
+
+	std::string camera_cmd_vel;
+	if (!nh_priv.getParam("camera_cmd_vel", camera_cmd_vel)) {
+		ROS_WARN_STREAM("Param 'camera_cmd_vel' not set");
+		camera_cmd_vel = "/camera/cmd_vel";
 	}
 
 	if (!nh_priv.getParam("robot_id", robot_id)) {
@@ -219,9 +256,11 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	// realtime publisher
 	joint_state_publisher_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(nh, joint_command, 4));
 
-	sub_joint_states = nh.subscribe<nav_msgs::Odometry>(odom, 1, &CustomJointController::getOdom,
-	                                                    this);
-
+	odomRobotSub.subscribe(nh, odom, 1);
+	odomCamSub.subscribe(nh, odomCam, 1);
+	approx.reset(new sync_approx(MyApproxSyncPolicy (10), odomRobotSub, odomCamSub));
+	approx->registerCallback(boost::bind(&CustomJointController::getOdom,this, _1, _2));
+	odomRobotSub.getTopic();
 	sub_joint_states2 = nh.subscribe<sensor_msgs::JointState>(current_state, 1, &CustomJointController::getJointStates,
 	                                                          this);
 	sub_nmpc_goal = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(current_setpoint, 1,
@@ -229,6 +268,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	                                                                       this);
 
 	sub_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(cmd_vel, 1, &CustomJointController::getDesiredSpeed, this);
+	sub_camera_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(camera_cmd_vel, 1, &CustomJointController::getDesiredCameraSpeed, this);
 
 	return true;
 }
@@ -333,8 +373,11 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		} else {
 			commanded_velocity = joint_pid_controllers_[joint_name].updatePid(error, period);
 		}
+		ROS_INFO_STREAM(commanded_velocity);
 		limitVelocity(joint_name, commanded_velocity);
-
+		if (isnan(commanded_velocity)){
+			commanded_velocity = 0;
+		}
 		// if error < 0.1, set velocity to 0
 		if (!ignore_position)
 			if (fabs(error) < 0.05) {
@@ -383,6 +426,7 @@ void CustomJointController::pubIRotate(ros::Time time) {
 	double vx = 0; //vel_x * cos(w) - vel_y * sin(w);
 	double vy = 0; //vel_x * sin(w) + vel_y * cos(w);
 	double vw = 0;
+	double vwcam = 0;
 
 	// we're actually publishing, so increment time
 	last_publish_time_ = last_publish_time_ + ros::Duration(1.0 / publish_rate_);
@@ -413,6 +457,13 @@ void CustomJointController::pubIRotate(ros::Time time) {
 			joint_state_publisher_->msg_.velocity.push_back(vw);
 			ROS_INFO_STREAM(joint.first << " " << vw);
 		}
+
+		if (std::string(joint.first) == "cameraholder_joint") {
+			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			vwcam = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
+			joint_state_publisher_->msg_.velocity.push_back(vwcam);
+			ROS_INFO_STREAM(joint.first << " " << vwcam);
+		}
 	}
 
 	// apply kinematics - current wheel config.
@@ -436,13 +487,9 @@ void CustomJointController::pubIRotate(ros::Time time) {
 			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
 			joint_state_publisher_->msg_.velocity.push_back(w1);
 		}
-		if (std::string(joint.first) == "wheel0_joint") {
+		if (std::string(joint.first) == "wheel2_joint") {
 			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
 			joint_state_publisher_->msg_.velocity.push_back(w2);
-		}
-		if (std::string(joint.first) == "cameraholder_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-			joint_state_publisher_->msg_.velocity.push_back(0);
 		}
 	}
 
@@ -458,7 +505,7 @@ void CustomJointController::getJointStates(const sensor_msgs::JointState::ConstP
 	update(msg->header.stamp, ros::Duration(1 / publish_rate_), current_state);
 }
 
-void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg) {
+void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam) {
 	std::map <std::string, std::vector<double>> current_state;
 	for (const auto &name: joint_names_) {
 		double position, velocity;
@@ -478,32 +525,44 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg) {
 			position = msg->pose.pose.position.x;
 			velocity = vel(0);
 		}
-		if (name == "y_joint") {
+		else if (name == "y_joint") {
 			position = msg->pose.pose.position.y;
 			velocity = vel(1);
 		}
-		if (name == "z_joint") {
+		else if (name == "z_joint") {
 			position = msg->pose.pose.position.z;
 			velocity = vel(2);
 		}
-		if (name == "roll_joint") {
+		else if (name == "roll_joint") {
 			position = roll;
 			velocity = msg->twist.twist.angular.x;
 		}
-		if (name == "pitch_joint") {
+		else if (name == "pitch_joint") {
 			position = pitch;
 			velocity = msg->twist.twist.angular.y;
 		}
-		if (name == "yaw_joint") {
+		else if (name == "yaw_joint") {
 			position = yaw;
 			velocity = msg->twist.twist.angular.z;
 		}
+		else if (name == "cameraholder_joint") {
+			tf::Quaternion qcam(msgCam->pose.pose.orientation.x, msgCam->pose.pose.orientation.y, msgCam->pose.pose.orientation.z,
+			                 msgCam->pose.pose.orientation.w);
+			tf::Matrix3x3 mc(qcam);
+			double rollcam, pitchcam, yawcam;
+			m.getRPY(rollcam, pitchcam, yawcam);
+			position = yawcam;
+			velocity = msgCam->twist.twist.angular.z;
+			ROS_INFO_STREAM("CAMERAHOLDER VEL " << velocity);
+		}
+		else {position = 0; velocity = 0;}
 
 		current_state[name].emplace_back(position);
 		current_state[name].emplace_back(velocity);
 	}
 	update(msg->header.stamp, ros::Duration(1 / publish_rate_), current_state);
 }
+
 
 void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr &msg) {
 	std::map <std::string, std::vector<double>> local_setpoints;
@@ -568,6 +627,20 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 
 	local_setpoints["yaw_joint"].emplace_back(0);
 	local_setpoints["yaw_joint"].emplace_back(msg->angular.z);
+
+	ignore_position = true;
+
+	setCommand(local_setpoints);
+}
+
+
+void CustomJointController::getDesiredCameraSpeed(const geometry_msgs::Twist::ConstPtr &msg) {
+	ROS_INFO_STREAM("Desired Camera speed: " << msg->angular.z);
+
+	std::map <std::string, std::vector<double>> local_setpoints;
+
+	local_setpoints["cameraholder_joint"].emplace_back(0);
+	local_setpoints["cameraholder_joint"].emplace_back(msg->angular.z);
 
 	ignore_position = true;
 

@@ -26,6 +26,13 @@ i_max_yaw:  1
 i_min_yaw:  -1
 anti_windup_yaw: true
 
+p_gain_cameraholder: 0.4 #1.2
+i_gain_cameraholder:  4
+d_gain_cameraholder:  0.00
+i_max_cameraholder:  1
+i_min_cameraholder:  -1
+anti_windup_cameraholder: true
+
 p_gain_x: 0.6 #1.2
 i_gain_x: 0.004
 d_gain_x: 0.00
@@ -50,10 +57,12 @@ anti_windup_z: true
 position_limit_roll: 0.35
 position_limit_pitch: 0.35
 position_limit_yaw: 6.3
+position_limit_cameraholder: 6.3
 
 velocity_limit_roll: 0.7
 velocity_limit_pitch: 0.7
 velocity_limit_yaw: 1
+velocity_limit_cameraholder: 1
 velocity_limit_x: 0.5
 velocity_limit_y: 0.5
 velocity_limit_z: 0.5
