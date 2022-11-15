@@ -195,6 +195,11 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
+	if (!nh_priv.getParam("frame_id", frame_id)) {
+		ROS_ERROR("Param 'frame_id' not set");
+		return false;
+	}
+
 	// realtime publisher
 	joint_state_publisher_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(nh, joint_command, 4));
 
@@ -359,17 +364,21 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg) {
 		double roll, pitch, yaw;
 		m.getRPY(roll, pitch, yaw);
 
+		tf::quaternionTFToEigen(q, quaternion_odom);
+		Eigen::Vector3d vel(msg->twist.twist.linear.x , msg->twist.twist.linear.y, msg->twist.twist.linear.z);
+		vel = quaternion_odom * vel;
+
 		if (name == "x_joint") {
 			position = msg->pose.pose.position.x;
-			velocity = msg->twist.twist.linear.x;
+			velocity = vel(0);
 		}
 		if (name == "y_joint") {
 			position = msg->pose.pose.position.y;
-			velocity = msg->twist.twist.linear.y;
+			velocity = vel(1);
 		}
 		if (name == "z_joint") {
 			position = msg->pose.pose.position.z;
-			velocity = msg->twist.twist.linear.z;
+			velocity = vel(2);
 		}
 		if (name == "roll_joint") {
 			position = roll;
@@ -400,12 +409,17 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	else {
 		return;
 	}
+	double vel_x, vel_y, vel_z;
+	Eigen::Vector3d vel(msg->points[index].velocities[0].linear.x,	msg->points[index].velocities[0].linear.y,	msg->points[index].velocities[0].linear.z);
+	if (frame_id != "world")
+		vel = quaternion_odom * vel;
+
 	local_setpoints["x_joint"].emplace_back(msg->points[index].transforms[0].translation.x);
-	local_setpoints["x_joint"].emplace_back(msg->points[index].velocities[0].linear.x);
+	local_setpoints["x_joint"].emplace_back(vel(0));
 	local_setpoints["y_joint"].emplace_back(msg->points[index].transforms[0].translation.y);
-	local_setpoints["y_joint"].emplace_back(msg->points[index].velocities[0].linear.y);
+	local_setpoints["y_joint"].emplace_back(vel(1));
 	local_setpoints["z_joint"].emplace_back(msg->points[index].transforms[0].translation.z);
-	local_setpoints["z_joint"].emplace_back(msg->points[index].velocities[0].linear.z);
+	local_setpoints["z_joint"].emplace_back(vel(2));
 
 	// convert ros quaternion to rpy
 	tf::Quaternion q(msg->points[index].transforms[0].rotation.x, msg->points[index].transforms[0].rotation.y,

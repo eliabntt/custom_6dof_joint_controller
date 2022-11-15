@@ -38,6 +38,10 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Eigen>
+#include "tf_conversions/tf_eigen.h"
+#include <eigen_conversions/eigen_msg.h>
+
 namespace publish_joint_commands {
 		class CustomJointController {
 
@@ -82,6 +86,9 @@ namespace publish_joint_commands {
 				bool anti_windup_roll, anti_windup_pitch, anti_windup_yaw, anti_windup_x, anti_windup_y, anti_windup_z;
 
 				unsigned int n_joints_;
+
+				Eigen::Quaterniond quaternion_odom;
+				std::string frame_id;
 
 				void enforceLimits(std::string name, double &position);
 				void setCommand(const std::map<std::string, std::vector<double>> &setpoints);

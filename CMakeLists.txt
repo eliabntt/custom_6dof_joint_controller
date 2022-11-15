@@ -10,6 +10,7 @@ endif ()
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+find_package(Eigen3 QUIET)
 find_package(catkin REQUIRED COMPONENTS
         angles
         control_msgs
@@ -25,6 +26,9 @@ find_package(catkin REQUIRED COMPONENTS
         realtime_tools
         roscpp
         sensor_msgs
+        tf_conversions
+        tf
+        eigen_conversions
         )
 
 ## System dependencies are found with CMake's conventions
@@ -132,6 +136,7 @@ include_directories(
         include
         ${catkin_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
+        ${EIGEN3_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
