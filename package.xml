@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>custom_joint_controller_ros</name>
+  <name>custom_joint_controller_ros_irotate</name>
   <version>0.0.0</version>
-  <description>The custom_joint_controller_ros package</description>
+  <description>The custom_joint_controller_ros package versioned for irotate</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
