@@ -7,8 +7,8 @@
 #define MATH_PI     3.1415926535897931
 #define SIN_PI_3    sinf(MATH_PI/3)
 #define COS_PI_3    cosf(MATH_PI/3)
-#define R_WHEEL     4
-#define R_BASE      17
+#define R_WHEEL     0.04
+#define R_BASE      0.17
 
 using namespace publish_joint_commands;
 
@@ -466,18 +466,27 @@ void CustomJointController::pubIRotate(ros::Time time) {
 		}
 	}
 
+	tf::Quaternion q;
+	tf::quaternionEigenToTF(quaternion_odom,q);
+	tf::Matrix3x3 m(q);
+	double roll, pitch, w;
+	m.getRPY(roll, pitch, w);
+
+  // from global to local
+	double vel_x = vx * cos(w) + vy * sin(w);
+	double vel_y = - vx * sin(w) + vy * cos(w);
+
 	// apply kinematics - current wheel config.
 	// odometry obtained from literature_robotino...
 	// vx sin(alpha i) + vy cos(alpha i) + vw R
-	double v0 = -vx * SIN_PI_3 + vy * COS_PI_3 + vw * R_BASE;
-	double v1 = -vy + vw * R_BASE;
-	double v2 = +vx * SIN_PI_3 + vy * COS_PI_3 + vw * R_BASE;
+	double v0 = -vel_x * SIN_PI_3 + vel_y * COS_PI_3 + vw * R_BASE;
+	double v1 = -vel_y + vw * R_BASE;
+	double v2 = +vel_x * SIN_PI_3 + vel_y * COS_PI_3 + vw * R_BASE;
 
 	// get rad/s for each wheel
 	double w0 = v0 / R_WHEEL;
 	double w1 = v1 / R_WHEEL;
 	double w2 = v2 / R_WHEEL;
-
 	for (const auto &joint: joint_pid_controllers_) {
 		if (std::string(joint.first) == "wheel0_joint") {
 			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
