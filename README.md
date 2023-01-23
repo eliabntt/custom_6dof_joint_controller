@@ -1,20 +1,31 @@
-# CUSTOM ROS PID CONTROLLER for a FREE FLOATING ROBOT
+# CUSTOM ROS PID CONTROLLER for a FREELY MOVING ROBOT (6DOF)
+### The `main` branch focuses on position setpoints, the `irotate_edits` branch focuses on velocity setpoints.
 
-The peculiarity of this controller is that it commands a robot in ROS Simulations by directly giving JOINT VELOCITY COMMANDS.
+The peculiarity of this controller is that it commands a robot in ROS Simulations by directly giving _JOINT VELOCITY COMMANDS_.
 
-The robot with a x-y-z-roll-pitch-yaw set of joints will receive commands to those DIRECTLY!
+The controller is completely customizable. You can change the set of joints or add some. Check the example in the `irotate_edits` branch where we control `x-y-yaw-camera_yaw-wheel[0,1,2]`-joints.
 
-This controller is useful whenever you cannot control the robot with the usual way.
+The robot will be moved directly by the joints!
 
-Each JOINT has a PID associated to it. 
+This controller is useful whenever you cannot control the robot as usual, like omnidirectional robots that need to move perpendicularly to the wheels or in not-fluidodynamics simulation [drones, submarines] or in any other case.
 
-You can define FOR EACH JOINT: limits (both position and velocity), PID+Anti windup configs.
+You can associate a PID controller to each JOINT or set the velocities directly.
+
+You can define _for each joint_: limits (both position and velocity), PID+Anti windup configs.
 
 You can either listen to a JointState topic to get the current state or you can subscribe to an odometry topic.
+
+### Main branch
 
 joint_names: ["x_joint", "y_joint", "z_joint", "roll_joint", "pitch_joint", "yaw_joint"]
 
 The publish rate is 100Hz.
+
+### Installation
+
+Simply download and build, you just need standard ros packages.
+
+### Launch and config
 
 You can launch the node with
 
@@ -26,6 +37,8 @@ The main params are
 <param name="setpoint" value="/$(arg namespace)/full_predicted_state" />
 <param name="joint_command" value="/$(arg namespace)/joint_commands" />
 ```
+
+`namespace` is the name of the robot. 
 
 The config.yaml file contains the other settable parameters.
 
