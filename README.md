@@ -1,5 +1,6 @@
 # CUSTOM ROS PID CONTROLLER for a FREELY MOVING ROBOT (6DOF)
-### The `main` branch focuses on position setpoints, the `irotate_edits` branch focuses on velocity setpoints.
+#### The `main` branch focuses on position setpoints, the `irotate_edits` branch focuses on velocity setpoints.
+#### The `irotate_edits` branch will be soon merged into the main branch. You can easily fork this repo and address your own changes.
 
 The peculiarity of this controller is that it commands a robot in ROS Simulations by directly giving _JOINT VELOCITY COMMANDS_.
 
@@ -14,6 +15,11 @@ You can associate a PID controller to each JOINT or set the velocities directly.
 You can define _for each joint_: limits (both position and velocity), PID+Anti windup configs.
 
 You can either listen to a JointState topic to get the current state or you can subscribe to an odometry topic.
+
+The main differences between the two branches are as follow:
+- iRotate listen for two odometries and use sinchronized messages
+- iRotate works with (local) velocity setpoints rather than global position ones
+- iRotate shows how to control joints directly without the embedded PID controller (set speed instead of target).
 
 ### Main branch
 
