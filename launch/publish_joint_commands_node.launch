@@ -1,22 +1,32 @@
 <launch>
-    <arg name="namespace" value="my_robot_0" />
-    <arg name="box_max_x" default="5000" />
-    <arg name="box_max_y" default="5000" />
-    <arg name="box_max_z" default="5000" />
-    <arg name="robot_id"  default="0" />
-    <arg name="frame_id"  default="world"/> <!-- use "world" to not convert velocities of the setpoint. Else, it will use odom orientation -->
-    <node name="custom_joint_controller_ros" pkg="custom_joint_controller_ros" type="custom_joint_controller_ros_irotate_node" respawn="true" clear_params="true" output="screen"
-          launch-prefix="gdb -ex run --args">
-      <rosparam file="$(find custom_joint_controller_ros)/config/config.yaml" />
-      <param name="odom" value="/odometry/filtered" />
-      <param name="odomCam" value="/camera/odometry/filtered" />
-      <param name="setpoint" value="/$(arg namespace)/full_predicted_state" />
-      <param name="joint_command" value="/$(arg namespace)/joint_commands" />
+    <arg name="namespace" value="my_robot_0"/>
+    <arg name="box_max_x" default="5000"/>
+    <arg name="box_max_y" default="5000"/>
+    <arg name="box_max_z" default="5000"/>
+    <arg name="robot_id" default="0"/>
+    <!-- use "world" to not convert velocities of the setpoint. Else, it will use odom orientation -->
+    <arg name="frame_id" default="world"/>
 
-      <param name="position_limit_x" value="$(arg position_limit_x)" />
-      <param name="position_limit_y" value="$(arg position_limit_y)" />
-      <param name="position_limit_z" value="$(arg position_limit_z)" />
-      <param name="robot_id" type="int" value="$(arg robot_id)" />
-      <param name="frame_id" value="$(arg frame_id)" />
+    <node name="custom_joint_controller_ros" pkg="custom_joint_controller_ros" type="custom_joint_controller_ros_node"
+          respawn="true" clear_params="true" output="screen">
+        <group if="$(eval arg('robot_id') ==0)">
+            <rosparam file="$(find custom_joint_controller_ros)/config/config_drone.yaml"/>
+            <param name="odom" value="/$(arg namespace)/odom" />
+        </group>
+
+        <group if="$(eval arg('robot_id') ==1)">
+            <rosparam file="$(find custom_joint_controller_ros)/config/config_irotate.yaml"/>
+            <param name="odom" value="/odometry/filtered"/>
+            <param name="odomCam" value="/camera/odometry/filtered"/>
+        </group>
+
+        <param name="setpoint" value="/$(arg namespace)/full_predicted_state"/>
+        <param name="joint_command" value="/$(arg namespace)/joint_commands"/>
+
+        <param name="position_limit_x" value="$(arg position_limit_x)"/>
+        <param name="position_limit_y" value="$(arg position_limit_y)"/>
+        <param name="position_limit_z" value="$(arg position_limit_z)"/>
+        <param name="robot_id" type="int" value="$(arg robot_id)"/>
+        <param name="frame_id" value="$(arg frame_id)"/>
     </node>
 </launch>
