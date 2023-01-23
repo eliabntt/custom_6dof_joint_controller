@@ -4,6 +4,7 @@
 
 #include <tf/LinearMath/Matrix3x3.h>
 #include "custom_joint_controller_ros/publish_joint_commands.h"
+
 #define MATH_PI     3.1415926535897931
 #define SIN_PI_3    sinf(MATH_PI/3)
 #define COS_PI_3    cosf(MATH_PI/3)
@@ -95,8 +96,8 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		ROS_ERROR("No joint names found on parameter server");
 		return false;
 	} else {
-		for (int i = 0; i < v.size(); i++) {
-			std::string name = std::string(v[i]);
+		for (auto & i : v) {
+			std::string name = std::string(i);
 			joint_names_.emplace_back(name);
 			double p_gain, i_gain, d_gain, i_max, i_min;
 			bool anti_windup;
@@ -131,7 +132,7 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 //				ROS_INFO_STREAM("UPDATING " << name << " in yaw");
 				max_velocity_["yaw_joint"] = velocity_limit_yaw;
 				max_position_["yaw_joint"] = position_limit_yaw;
-			}else if (name == "cameraholder_joint") {
+			} else if (name == "cameraholder_joint") {
 				p_gain = p_gain_cameraholder;
 				i_gain = i_gain_cameraholder;
 				d_gain = d_gain_cameraholder;
@@ -140,13 +141,6 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 				anti_windup = anti_windup_cameraholder;
 				max_velocity_["cameraholder_joint"] = velocity_limit_cameraholder;
 				max_position_["cameraholder_joint"] = position_limit_cameraholder;
-				ROS_INFO_STREAM("UPDATING " << name << " in cameraholder");
-				ROS_INFO_STREAM(p_gain_cameraholder << " " <<
-					                i_gain_cameraholder << " " <<
-					                d_gain_cameraholder << " " <<
-						                i_max_cameraholder << " " <<
-					                i_min_cameraholder << " " <<
-					                anti_windup_cameraholder << " ");
 			} else if (name == "x_joint") {
 				p_gain = p_gain_x;
 				i_gain = i_gain_x;
@@ -217,13 +211,6 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
-	std::string odomCam;
-	// get publishing period
-	if (!nh_priv.getParam("odomCam", odomCam)) {
-		ROS_ERROR("Parameter 'odomCam' not set");
-		return false;
-	}
-
 	std::string current_setpoint;
 	// get publishing period
 	if (!nh_priv.getParam("setpoint", current_setpoint)) {
@@ -231,22 +218,41 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 		return false;
 	}
 
-	std::string cmd_vel;
-	if (!nh_priv.getParam("cmd_vel", cmd_vel)) {
-		ROS_WARN_STREAM("Param 'cmd_vel' not set");
-		cmd_vel = "cmd_vel";
-	}
-
-	std::string camera_cmd_vel;
-	if (!nh_priv.getParam("camera_cmd_vel", camera_cmd_vel)) {
-		ROS_WARN_STREAM("Param 'camera_cmd_vel' not set");
-		camera_cmd_vel = "/camera/cmd_vel";
-	}
-
 	if (!nh_priv.getParam("robot_id", robot_id)) {
 		ROS_ERROR("Param 'robot_id' not set");
 		return false;
 	}
+
+	if (robot_id == IROTATE) {
+
+		std::string odomCam;
+		// get publishing period
+		if (!nh_priv.getParam("odomCam", odomCam)) {
+			ROS_ERROR("Parameter 'odomCam' not set");
+			return false;
+		}
+
+		std::string cmd_vel;
+		if (!nh_priv.getParam("cmd_vel", cmd_vel)) {
+			ROS_WARN_STREAM("Param 'cmd_vel' not set");
+			cmd_vel = "cmd_vel";
+		}
+
+		std::string camera_cmd_vel;
+		if (!nh_priv.getParam("camera_cmd_vel", camera_cmd_vel)) {
+			ROS_WARN_STREAM("Param 'camera_cmd_vel' not set");
+			camera_cmd_vel = "/camera/cmd_vel";
+		}
+		odomRobotSub.subscribe(nh, odom, 1);
+		odomCamSub.subscribe(nh, odomCam, 1);
+		approx.reset(new sync_approx(MyApproxSyncPolicy(10), odomRobotSub, odomCamSub));
+		approx->registerCallback(boost::bind(&CustomJointController::getOdomTS, this, _1, _2));
+
+		sub_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(cmd_vel, 1, &CustomJointController::getDesiredSpeed, this);
+		sub_camera_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(camera_cmd_vel, 1,
+		                                                             &CustomJointController::getDesiredCameraSpeed, this);
+	}
+
 
 	if (!nh_priv.getParam("frame_id", frame_id)) {
 		ROS_ERROR("Param 'frame_id' not set");
@@ -256,19 +262,16 @@ bool CustomJointController::init(ros::NodeHandle &nh,
 	// realtime publisher
 	joint_state_publisher_.reset(new realtime_tools::RealtimePublisher<sensor_msgs::JointState>(nh, joint_command, 4));
 
-	odomRobotSub.subscribe(nh, odom, 1);
-	odomCamSub.subscribe(nh, odomCam, 1);
-	approx.reset(new sync_approx(MyApproxSyncPolicy (10), odomRobotSub, odomCamSub));
-	approx->registerCallback(boost::bind(&CustomJointController::getOdom,this, _1, _2));
-	odomRobotSub.getTopic();
-	sub_joint_states2 = nh.subscribe<sensor_msgs::JointState>(current_state, 1, &CustomJointController::getJointStates,
-	                                                          this);
-	sub_nmpc_goal = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(current_setpoint, 1,
+	if (robot_id == DRONE) {
+		sub_joint_states = nh.subscribe<nav_msgs::Odometry>(odom, 1, &CustomJointController::getOdom,
+		                                                    this);
+		sub_nmpc_goal = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(current_setpoint, 1,
 	                                                                       &CustomJointController::getCurrentSetpoint,
 	                                                                       this);
-
-	sub_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(cmd_vel, 1, &CustomJointController::getDesiredSpeed, this);
-	sub_camera_cmd_vel_goal = nh.subscribe<geometry_msgs::Twist>(camera_cmd_vel, 1, &CustomJointController::getDesiredCameraSpeed, this);
+	}
+	// useless
+	sub_joint_states2 = nh.subscribe<sensor_msgs::JointState>(current_state, 1, &CustomJointController::getJointStates,
+	                                                          this);
 
 	return true;
 }
@@ -303,7 +306,7 @@ void CustomJointController::enforceLimits(std::string name, double &position) {
 	}
 }
 
-void CustomJointController::setCommand(const std::map <std::string, std::vector<double>> &setpoints) {
+void CustomJointController::setCommand(const std::map<std::string, std::vector<double>> &setpoints) {
 	first_commad_ = true;
 	for (auto joint: setpoints) {
 		commands_struct_[joint.first].position_ = joint.second[0];
@@ -328,12 +331,12 @@ void CustomJointController::limitVelocity(const std::string &name, double &veloc
 
 // fixme update to setError/whatever. updatePid use OPPOSITE convention!!! https://github.com/ros-controls/ros_control/pull/12
 void CustomJointController::update(const ros::Time &time, const ros::Duration &period,
-                                   const std::map <std::string, std::vector<double>> &current_state) {
+                                   const std::map<std::string, std::vector<double>> &current_state) {
 	if (not first_commad_) {
 		first_commad_ = true;
 		setCommand(current_state);
 	}
-	for (auto joint_name: joint_names_) {
+	for (const auto& joint_name: joint_names_) {
 		commands_struct_[joint_name] = *(commands_[joint_name].readFromRT());
 		double command_position = commands_struct_[joint_name].position_;
 		double command_velocity = commands_struct_[joint_name].velocity_;
@@ -361,11 +364,11 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		} else {
 			error = command_position - current_position;
 		}
-		error = -error; //updatePID use this convention
+		error = -error; //updatePID use this convention // fixme is deprecated
 
 		if (has_velocity_) {
 			vel_error = -(command_velocity - current_velocity);
-			if (!ignore_position)
+			if (robot_id == DRONE) // position control
 				commanded_velocity = joint_pid_controllers_[joint_name].updatePid(error, vel_error, period);
 			else {
 				commanded_velocity = joint_pid_controllers_[joint_name].updatePid(vel_error, period);
@@ -375,15 +378,16 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 		}
 		ROS_INFO_STREAM(commanded_velocity);
 		limitVelocity(joint_name, commanded_velocity);
-		if (isnan(commanded_velocity)){
+		if (isnan(commanded_velocity)) {
 			commanded_velocity = 0;
 		}
 		// if error < 0.1, set velocity to 0
-		if (!ignore_position)
+		if (robot_id == DRONE) // position control
 			if (fabs(error) < 0.05) {
 				commanded_velocity = 0;
 			}
-		std::cout << "For joint " << joint_name << " error is " << error << " velerror " << vel_error << " current vel " << current_velocity << " and the vel " << commanded_velocity << std::endl;
+		std::cout << "For joint " << joint_name << " error is " << error << " velerror " << vel_error << " current vel "
+		          << current_velocity << " and the vel " << commanded_velocity << std::endl;
 		joint_pid_controllers_[joint_name].setCurrentCmd(commanded_velocity);
 	}
 
@@ -392,17 +396,17 @@ void CustomJointController::update(const ros::Time &time, const ros::Duration &p
 
 		// try to publish
 		if (joint_state_publisher_->trylock()) {
-			if (robot_id == IROTATE){
+			if (robot_id == IROTATE) {
 				pubIRotate(time);
 			}
-			if (robot_id == DRONE){
+			if (robot_id == DRONE) {
 				pubDrone(time);
 			}
 		}
 	}
 }
 
-void CustomJointController::pubDrone(ros::Time time){
+void CustomJointController::pubDrone(ros::Time time) {
 	// we're actually publishing, so increment time
 	last_publish_time_ = last_publish_time_ + ros::Duration(1.0 / publish_rate_);
 
@@ -413,8 +417,8 @@ void CustomJointController::pubDrone(ros::Time time){
 	joint_state_publisher_->msg_.header.stamp = time;
 
 	for (const auto &joint: joint_pid_controllers_) {
-		joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-		joint_state_publisher_->msg_.velocity.push_back(
+		joint_state_publisher_->msg_.name.emplace_back(joint.first);
+		joint_state_publisher_->msg_.velocity.emplace_back(
 			joint_pid_controllers_[std::string(joint.first)].getCurrentCmd());
 	}
 	joint_state_publisher_->unlockAndPublish();
@@ -439,42 +443,42 @@ void CustomJointController::pubIRotate(ros::Time time) {
 
 	for (const auto &joint: joint_pid_controllers_) {
 		if (std::string(joint.first) == "x_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
 			vx = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
-			joint_state_publisher_->msg_.velocity.push_back(vx);
+			joint_state_publisher_->msg_.velocity.emplace_back(vx);
 			ROS_INFO_STREAM(joint.first << " " << vx);
 		}
 		if (std::string(joint.first) == "y_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
 			vy = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
-			joint_state_publisher_->msg_.velocity.push_back(vy);
+			joint_state_publisher_->msg_.velocity.emplace_back(vy);
 			ROS_INFO_STREAM(joint.first << " " << vy);
 		}
 
 		if (std::string(joint.first) == "yaw_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
 			vw = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
-			joint_state_publisher_->msg_.velocity.push_back(vw);
+			joint_state_publisher_->msg_.velocity.emplace_back(vw);
 			ROS_INFO_STREAM(joint.first << " " << vw);
 		}
 
 		if (std::string(joint.first) == "cameraholder_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
 			vwcam = joint_pid_controllers_[std::string(joint.first)].getCurrentCmd();
-			joint_state_publisher_->msg_.velocity.push_back(vwcam);
+			joint_state_publisher_->msg_.velocity.emplace_back(vwcam);
 			ROS_INFO_STREAM(joint.first << " " << vwcam);
 		}
 	}
 
 	tf::Quaternion q;
-	tf::quaternionEigenToTF(quaternion_odom,q);
+	tf::quaternionEigenToTF(quaternion_odom, q);
 	tf::Matrix3x3 m(q);
 	double roll, pitch, w;
 	m.getRPY(roll, pitch, w);
 
-  // from global to local
+	// from global to local
 	double vel_x = vx * cos(w) + vy * sin(w);
-	double vel_y = - vx * sin(w) + vy * cos(w);
+	double vel_y = -vx * sin(w) + vy * cos(w);
 
 	// apply kinematics - current wheel config.
 	// odometry obtained from literature_robotino...
@@ -489,16 +493,16 @@ void CustomJointController::pubIRotate(ros::Time time) {
 	double w2 = v2 / R_WHEEL;
 	for (const auto &joint: joint_pid_controllers_) {
 		if (std::string(joint.first) == "wheel0_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-			joint_state_publisher_->msg_.velocity.push_back(w0);
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.emplace_back(w0);
 		}
 		if (std::string(joint.first) == "wheel1_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-			joint_state_publisher_->msg_.velocity.push_back(w1);
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.emplace_back(w1);
 		}
 		if (std::string(joint.first) == "wheel2_joint") {
-			joint_state_publisher_->msg_.name.push_back(std::string(joint.first));
-			joint_state_publisher_->msg_.velocity.push_back(w2);
+			joint_state_publisher_->msg_.name.emplace_back(std::string(joint.first));
+			joint_state_publisher_->msg_.velocity.emplace_back(w2);
 		}
 	}
 
@@ -506,7 +510,7 @@ void CustomJointController::pubIRotate(ros::Time time) {
 }
 
 void CustomJointController::getJointStates(const sensor_msgs::JointState::ConstPtr &msg) {
-	std::map <std::string, std::vector<double>> current_state;
+	std::map<std::string, std::vector<double>> current_state;
 	for (int i = 0; i < msg->name.size(); i++) {
 		current_state[msg->name[i]].emplace_back(msg->position[i]);
 		current_state[msg->name[i]].emplace_back(msg->velocity[i]);
@@ -514,7 +518,7 @@ void CustomJointController::getJointStates(const sensor_msgs::JointState::ConstP
 	update(msg->header.stamp, ros::Duration(1 / publish_rate_), current_state);
 }
 
-void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam) {
+void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg) {
 	std::map <std::string, std::vector<double>> current_state;
 	for (const auto &name: joint_names_) {
 		double position, velocity;
@@ -522,8 +526,56 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg, con
 		tf::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z,
 		                 msg->pose.pose.orientation.w);
 
+		tf::Matrix3x3 m(q);
+		double roll, pitch, yaw;
+		m.getRPY(roll, pitch, yaw);
+
 		tf::quaternionTFToEigen(q, quaternion_odom);
 		Eigen::Vector3d vel(msg->twist.twist.linear.x , msg->twist.twist.linear.y, msg->twist.twist.linear.z);
+		vel = quaternion_odom * vel;
+
+		if (name == "x_joint") {
+			position = msg->pose.pose.position.x;
+			velocity = vel(0);
+		}
+		if (name == "y_joint") {
+			position = msg->pose.pose.position.y;
+			velocity = vel(1);
+		}
+		if (name == "z_joint") {
+			position = msg->pose.pose.position.z;
+			velocity = vel(2);
+		}
+		if (name == "roll_joint") {
+			position = roll;
+			velocity = msg->twist.twist.angular.x;
+		}
+		if (name == "pitch_joint") {
+			position = pitch;
+			velocity = msg->twist.twist.angular.y;
+		}
+		if (name == "yaw_joint") {
+			position = yaw;
+			velocity = msg->twist.twist.angular.z;
+		}
+
+		current_state[name].emplace_back(position);
+		current_state[name].emplace_back(velocity);
+	}
+	update(msg->header.stamp, ros::Duration(1 / publish_rate_), current_state);
+}
+
+void
+CustomJointController::getOdomTS(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam) {
+	std::map<std::string, std::vector<double>> current_state;
+	for (const auto &name: joint_names_) {
+		double position, velocity;
+
+		tf::Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z,
+		                 msg->pose.pose.orientation.w);
+
+		tf::quaternionTFToEigen(q, quaternion_odom);
+		Eigen::Vector3d vel(msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z);
 		vel = quaternion_odom * vel;
 
 		tf::Matrix3x3 m(q);
@@ -533,38 +585,35 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg, con
 		if (name == "x_joint") {
 			position = msg->pose.pose.position.x;
 			velocity = vel(0);
-		}
-		else if (name == "y_joint") {
+		} else if (name == "y_joint") {
 			position = msg->pose.pose.position.y;
 			velocity = vel(1);
-		}
-		else if (name == "z_joint") {
+		} else if (name == "z_joint") {
 			position = msg->pose.pose.position.z;
 			velocity = vel(2);
-		}
-		else if (name == "roll_joint") {
+		} else if (name == "roll_joint") {
 			position = roll;
 			velocity = msg->twist.twist.angular.x;
-		}
-		else if (name == "pitch_joint") {
+		} else if (name == "pitch_joint") {
 			position = pitch;
 			velocity = msg->twist.twist.angular.y;
-		}
-		else if (name == "yaw_joint") {
+		} else if (name == "yaw_joint") {
 			position = yaw;
 			velocity = msg->twist.twist.angular.z;
-		}
-		else if (name == "cameraholder_joint") {
-			tf::Quaternion qcam(msgCam->pose.pose.orientation.x, msgCam->pose.pose.orientation.y, msgCam->pose.pose.orientation.z,
-			                 msgCam->pose.pose.orientation.w);
+		} else if (name == "cameraholder_joint") {
+			tf::Quaternion qcam(msgCam->pose.pose.orientation.x, msgCam->pose.pose.orientation.y,
+			                    msgCam->pose.pose.orientation.z,
+			                    msgCam->pose.pose.orientation.w);
 			tf::Matrix3x3 mc(qcam);
 			double rollcam, pitchcam, yawcam;
 			m.getRPY(rollcam, pitchcam, yawcam);
 			position = yawcam;
 			velocity = msgCam->twist.twist.angular.z;
 			ROS_INFO_STREAM("CAMERAHOLDER VEL " << velocity);
+		} else {
+			position = 0;
+			velocity = 0;
 		}
-		else {position = 0; velocity = 0;}
 
 		current_state[name].emplace_back(position);
 		current_state[name].emplace_back(velocity);
@@ -574,16 +623,16 @@ void CustomJointController::getOdom(const nav_msgs::Odometry::ConstPtr &msg, con
 
 
 void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr &msg) {
-	std::map <std::string, std::vector<double>> local_setpoints;
+	std::map<std::string, std::vector<double>> local_setpoints;
 
-	int index = 0;
+	int index;
 	if (!msg->points.empty() && msg->points.size() > 1) {
 		index = (int) ((msg->points.size() - 1));
 	} else {
 		return;
 	}
-	double vel_x, vel_y, vel_z;
-	Eigen::Vector3d vel(msg->points[index].velocities[0].linear.x,	msg->points[index].velocities[0].linear.y,	msg->points[index].velocities[0].linear.z);
+	Eigen::Vector3d vel(msg->points[index].velocities[0].linear.x, msg->points[index].velocities[0].linear.y,
+	                    msg->points[index].velocities[0].linear.z);
 	if (frame_id != "world")
 		vel = quaternion_odom * vel;
 
@@ -609,16 +658,15 @@ void CustomJointController::getCurrentSetpoint(const trajectory_msgs::MultiDOFJo
 	local_setpoints["yaw_joint"].emplace_back(msg->points[index].velocities[0].angular.z);
 
 	setCommand(local_setpoints);
-	ignore_position = false;
 }
 
 void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr &msg) {
 	ROS_INFO_STREAM("Desired speed: " << msg->linear.x << " " << msg->linear.y << " " << msg->angular.z);
 
-	std::map <std::string, std::vector<double>> local_setpoints;
+	std::map<std::string, std::vector<double>> local_setpoints;
 
 	double vel_x, vel_y;
-	Eigen::Vector3d vel(msg->linear.x , msg->linear.y, 0);
+	Eigen::Vector3d vel(msg->linear.x, msg->linear.y, 0);
 	if (frame_id != "world")
 		vel = quaternion_odom * vel;
 
@@ -627,17 +675,8 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 	local_setpoints["y_joint"].emplace_back(0);
 	local_setpoints["y_joint"].emplace_back(vel(1));
 
-//	local_setpoints["z_joint"].emplace_back(0);
-//	local_setpoints["z_joint"].emplace_back(msg->linear.z);
-//	local_setpoints["roll_joint"].emplace_back(0);
-//	local_setpoints["roll_joint"].emplace_back(msg->angular.x);
-//	local_setpoints["pitch_joint"].emplace_back(0);
-//	local_setpoints["pitch_joint"].emplace_back(msg->angular.y);
-
 	local_setpoints["yaw_joint"].emplace_back(0);
 	local_setpoints["yaw_joint"].emplace_back(msg->angular.z);
-
-	ignore_position = true;
 
 	setCommand(local_setpoints);
 }
@@ -646,12 +685,10 @@ void CustomJointController::getDesiredSpeed(const geometry_msgs::Twist::ConstPtr
 void CustomJointController::getDesiredCameraSpeed(const geometry_msgs::Twist::ConstPtr &msg) {
 	ROS_INFO_STREAM("Desired Camera speed: " << msg->angular.z);
 
-	std::map <std::string, std::vector<double>> local_setpoints;
+	std::map<std::string, std::vector<double>> local_setpoints;
 
 	local_setpoints["cameraholder_joint"].emplace_back(0);
 	local_setpoints["cameraholder_joint"].emplace_back(msg->angular.z);
-
-	ignore_position = true;
 
 	setCommand(local_setpoints);
 }

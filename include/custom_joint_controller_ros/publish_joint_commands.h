@@ -102,12 +102,12 @@ namespace publish_joint_commands {
 
 				void getJointStates(const sensor_msgs::JointState::ConstPtr& msg);
 
-				void getOdom(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam);
+				void getOdomTS(const nav_msgs::Odometry::ConstPtr &msg, const nav_msgs::Odometry::ConstPtr &msgCam);
+				void getOdom(const nav_msgs::Odometry::ConstPtr& msg);
 				void getCurrentSetpoint(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg);
 				void getDesiredSpeed(const geometry_msgs::Twist::ConstPtr &msg);
 				void getDesiredCameraSpeed(const geometry_msgs::Twist::ConstPtr &msg);
 				bool first_commad_ = false;
-				bool ignore_position = false;
 				void pubDrone(ros::Time time);
 				void pubIRotate(ros::Time time);
 				enum robot_type{
