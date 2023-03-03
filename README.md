@@ -1,6 +1,6 @@
 # CUSTOM ROS PID CONTROLLER for a FREELY MOVING ROBOT (6DOF)
 #### The `main` branch focuses on position setpoints, the `irotate_edits` branch focuses on velocity setpoints.
-#### The `irotate_edits` branch will be soon merged into the main branch. You can easily fork this repo and address your own changes.
+#### The `irotate_edits` branch will be soon merged into the main branch. You can easily fork this repo and address your own changes. With the `irotate_edits` you can see also see how the project can be used for multiple robots at the same time.
 
 ## This repository is part of the [GRADE](https://eliabntt.github.io/GRADE-RR/home) project
 
