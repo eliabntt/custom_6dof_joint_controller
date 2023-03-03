@@ -2,6 +2,8 @@
 #### The `main` branch focuses on position setpoints, the `irotate_edits` branch focuses on velocity setpoints.
 #### The `irotate_edits` branch will be soon merged into the main branch. You can easily fork this repo and address your own changes.
 
+## This repository is part of the [GRADE](https://eliabntt.github.io/GRADE-RR/home) project
+
 The peculiarity of this controller is that it commands a robot in ROS Simulations by directly giving _JOINT VELOCITY COMMANDS_.
 
 The controller is completely customizable. You can change the set of joints or add some. Check the example in the `irotate_edits` branch where we control `x-y-yaw-camera_yaw-wheel[0,1,2]`-joints.
@@ -52,3 +54,11 @@ The `setpoint` is a full predicted state from a NMPC in my case. I then take the
 You can easily change that piece of code.
 
 For reference I use the `nmpc` in `rotors_simulator` ([here](https://github.com/ethz-asl/rotors_simulator)) to compute the trajectory.
+
+__________
+### CITATION
+If you find this work useful please cite our work as
+
+```
+
+```
